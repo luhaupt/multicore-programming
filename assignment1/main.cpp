@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cstddef>
 #include <cstdlib>
@@ -116,7 +117,23 @@ bool miller_rabin(const usize& n) {
 void print_prime(const usize& n) {
 	if(!miller_rabin(n)) return;
 
-	std::osyncstream(std::cout) << n << "\n";
+	std::array<char, 32> buf{};
+	auto res = std::to_chars(buf.data(), buf.data() + buf.size(), n);
+
+	if (res.ec != std::errc()) [[unlikely]] {
+		std::cerr << "to_chars failed\n";
+		std::exit(1);
+	}
+
+	usize len = 0;
+	while (len < buf.size() && buf[len] >= '0' && buf[len] <= '9') {
+		++len;
+	}
+
+	buf[len] = '\n';
+	++len;
+
+	std::cout.write(buf.data(), len);
 }
 
 /**
@@ -215,7 +232,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // process_chunks(number_of_threads);
+    process_chunks(number_of_threads);
     // process_shared_mutex(number_of_threads);
-    process_shared_atomic(number_of_threads);
+    // process_shared_atomic(number_of_threads);
 }
