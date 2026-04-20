@@ -1,4 +1,4 @@
-SOURCES := $(wildcard assignment*/main.cpp)
+SOURCES := $(wildcard assignment*/main*.cpp)
 TARGETS := $(SOURCES:%.cpp=%)
 
 all: $(TARGETS)

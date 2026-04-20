@@ -9,10 +9,6 @@
 #include <thread>
 #include <vector>
 
-using usize = std::size_t;
-using u32 = std::uint32_t;
-using u64 = std::uint64_t;
-
 class Counter {
 private:
     std::atomic<int> value{0};
@@ -26,7 +22,7 @@ public:
     }
 };
 
-const size_t N = 100'000'000;
+const int N = 100'000'000;
 
 /**
  *  Helper function to check whether the CLI argument "jobs" is from type int.
@@ -43,13 +39,13 @@ bool parse_int(std::string_view sv, size_t& out) {
  *
  * Returns true if the number is a prime, false otherwise.
  */
-bool is_prime(const std::size_t& n) {
-    if (n < 2) return false;
-    if (n == 2 || n == 3 || n == 5 || n == 7) return true;
-    if (n % 2 == 0 || n % 3 == 0 || n % 5 == 0 || n % 7 == 0) return false;
+bool is_prime(const int& number) {
+    if (number <= 1) return false;
+    if (number == 2) return true;
+    if (number % 2 == 0) return false;
 
-    for (std::size_t i = 3; i * i <= n; i += 2) {
-        if (n % i == 0) return false;
+    for (int i = 3; i <= number / i; i += 2) {
+        if (number % i == 0) return false;
     }
 
     return true;
@@ -90,24 +86,20 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Starting with " << number_of_threads << (number_of_threads == 1 ? " thread" : " threads") << "...\n";
 
-    // Calculate chunk size to process for each thread
     std::vector<std::jthread> threads;
-    size_t chunk_size = (N + number_of_threads - 1) / number_of_threads;
-    std::cout << "Chunk size: " << chunk_size << "\n";
-
+    Counter counter;
     std::mutex cout_mutex;
 
     for (size_t thread_id = 0; thread_id < number_of_threads; ++thread_id) {
-        size_t start = thread_id * chunk_size;
-        size_t end = std::min(start + chunk_size, N);
+        threads.emplace_back([thread_id, &cout_mutex, &counter] {
+            while(true) {
+                int current_number = counter.get_and_increment();
 
-        if (start >= N) break;
+                if(current_number >= N) break;
 
-        threads.emplace_back([start, end, thread_id, &cout_mutex] {
-            for (size_t i = start; i < end; ++i) {
-                if (is_prime(i)) {
-                    std::lock_guard<std::mutex> lock(cout_mutex);
-                    std::cout << i << "\n";
+                if (is_prime(current_number)) {
+                    // std::lock_guard<std::mutex> lock(cout_mutex);
+                    // std::cout << current_number << " | " << thread_id << "\n";
                 }
             }
         });
