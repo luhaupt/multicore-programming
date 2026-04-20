@@ -113,17 +113,16 @@ bool miller_rabin(const usize& n) {
 /**
  * Checks whether a number is a prime.
  */
-void print_prime(const usize& n, std::atomic<usize>& cnt) {
+void print_prime(const usize& n) {
 	if(!miller_rabin(n)) return;
 
-	cnt.fetch_add(1, std::memory_order_relaxed);
-	// std::osyncstream(std::cout) << n << "\n";
+	std::osyncstream(std::cout) << n << "\n";
 }
 
 /**
  * Calculates prime numbers by equally sized chunks.
  */
-void process_chunks(const usize& number_of_threads, std::atomic<usize>& cnt) {
+void process_chunks(const usize& number_of_threads) {
 	// Calculate chunk size to process for each thread
     std::vector<std::jthread> threads;
     usize chunk_size = (N + number_of_threads - 1) / number_of_threads;
@@ -134,9 +133,9 @@ void process_chunks(const usize& number_of_threads, std::atomic<usize>& cnt) {
 
         if (start >= N) break;
 
-        threads.emplace_back([start, end, &cnt] {
+        threads.emplace_back([start, end] {
             for (usize i = start; i < end; ++i) {
-            	print_prime(i, cnt);
+            	print_prime(i);
             }
         });
     }
@@ -145,18 +144,18 @@ void process_chunks(const usize& number_of_threads, std::atomic<usize>& cnt) {
 /**
  * Calculates prime numbers using a shared counter with a mutex.
  */
-void process_shared_mutex(const usize& number_of_threads, std::atomic<usize>& cnt) {
+void process_shared_mutex(const usize& number_of_threads) {
 	std::vector<std::jthread> threads;
     MutexCounter counter;
 
     for (size_t thread_id = 0; thread_id < number_of_threads; ++thread_id) {
-        threads.emplace_back([&counter, &cnt] {
+        threads.emplace_back([&counter] {
             while(true) {
                 usize current_number = counter.get_and_increment();
 
                 if(current_number >= N) break;
 
-                print_prime(current_number, cnt);
+                print_prime(current_number);
             }
         });
     }
@@ -165,18 +164,18 @@ void process_shared_mutex(const usize& number_of_threads, std::atomic<usize>& cn
 /**
  * Calculates prime numbers using a shared counter with atomic.
  */
-void process_shared_atomic(const usize& number_of_threads, std::atomic<usize>& cnt) {
+void process_shared_atomic(const usize& number_of_threads) {
 	std::vector<std::jthread> threads;
     AtomicCounter counter;
 
     for (size_t thread_id = 0; thread_id < number_of_threads; ++thread_id) {
-        threads.emplace_back([&counter, &cnt] {
+        threads.emplace_back([&counter] {
             while(true) {
                 usize current_number = counter.get_and_increment();
 
                 if(current_number >= N) break;
 
-                print_prime(current_number, cnt);
+                print_prime(current_number);
             }
         });
     }
@@ -216,7 +215,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // process_chunks(number_of_threads, cnt);
-    // process_shared_mutex(number_of_threads, cnt);
-    process_shared_atomic(number_of_threads, cnt);
+    // process_chunks(number_of_threads);
+    // process_shared_mutex(number_of_threads);
+    process_shared_atomic(number_of_threads);
 }
