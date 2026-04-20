@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <charconv>
 #include <cstddef>
 #include <cstdlib>
@@ -12,9 +13,10 @@
 #include <syncstream>
 
 using usize = std::size_t;
+using u32 = std::uint32_t;
 using u64 = std::uint64_t;
 
-class MutexCounter {
+class Counter {
 private:
     int value{0};
     std::mutex mtx;
@@ -25,19 +27,6 @@ public:
      */
     int get_and_increment() {
     	std::lock_guard<std::mutex> lock(mtx);
-        return value++;
-    }
-};
-
-class AtomicCounter {
-private:
-    std::atomic<int> value{0};
-
-public:
-    /**
-     * Returns the current counter number and increments it.
-     */
-    int get_and_increment() {
         return value++;
     }
 };
@@ -142,6 +131,7 @@ void print_prime(const usize& n) {
 void process_chunks(const usize& number_of_threads) {
 	// Calculate chunk size to process for each thread
     std::vector<std::jthread> threads;
+    threads.reserve(number_of_threads);
     usize chunk_size = (N + number_of_threads - 1) / number_of_threads;
 
     for (usize thread_id = 0; thread_id < number_of_threads; ++thread_id) {
@@ -163,7 +153,8 @@ void process_chunks(const usize& number_of_threads) {
  */
 void process_shared_mutex(const usize& number_of_threads) {
 	std::vector<std::jthread> threads;
-    MutexCounter counter;
+	threads.reserve(number_of_threads);
+    Counter counter;
 
     for (size_t thread_id = 0; thread_id < number_of_threads; ++thread_id) {
         threads.emplace_back([&counter] {
@@ -183,12 +174,13 @@ void process_shared_mutex(const usize& number_of_threads) {
  */
 void process_shared_atomic(const usize& number_of_threads) {
 	std::vector<std::jthread> threads;
-    AtomicCounter counter;
+	threads.reserve(number_of_threads);
+    std::atomic<u32> counter;
 
     for (size_t thread_id = 0; thread_id < number_of_threads; ++thread_id) {
         threads.emplace_back([&counter] {
             while(true) {
-                usize current_number = counter.get_and_increment();
+                usize current_number = counter.fetch_add(1, std::memory_order_relaxed);
 
                 if(current_number >= N) break;
 
@@ -206,7 +198,6 @@ int main(int argc, char *argv[]) {
 
     usize number_of_threads = 1;
     bool argument_provided = false;
-    std::atomic<usize> cnt = 0;
 
     if (argc > 1) {
         argument_provided = std::strcmp(argv[1], "--jobs") == 0;
