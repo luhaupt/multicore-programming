@@ -17,11 +17,11 @@ using u32 = std::uint32_t;
 using u64 = std::uint64_t;
 
 class Counter {
-private:
+	private:
     int value{0};
     std::mutex mtx;
 
-public:
+	public:
     /**
      * Returns the current counter number and increments it.
      */
@@ -32,6 +32,18 @@ public:
 };
 
 const usize N = 100'000'000;
+
+// Buffer per thread for console output
+thread_local std::string buffer;
+std::mutex buffer_mtx;
+
+void flush_buffer() {
+	if (buffer.empty()) return;
+
+	std::lock_guard<std::mutex> lock(buffer_mtx);
+	std::cout.write(buffer.data(), buffer.size());
+	buffer.clear();
+}
 
 /**
  *  Helper function to check whether the CLI argument "jobs" is from type int.
@@ -106,23 +118,24 @@ bool miller_rabin(const usize& n) {
 void print_prime(const usize& n) {
 	if(!miller_rabin(n)) return;
 
-	std::array<char, 32> buf{};
-	auto res = std::to_chars(buf.data(), buf.data() + buf.size(), n);
+	if(buffer.capacity() == 0) {
+		buffer.reserve(1 << 20);
+	}
+
+	char buf[32];
+	auto res = std::to_chars(buf, buf + sizeof(buf), n);
 
 	if (res.ec != std::errc()) [[unlikely]] {
 		std::cerr << "to_chars failed\n";
 		std::exit(1);
 	}
 
-	usize len = 0;
-	while (len < buf.size() && buf[len] >= '0' && buf[len] <= '9') {
-		++len;
+	*res.ptr++ = '\n';
+	buffer.append(buf, res.ptr);
+
+	if (buffer.size() > (1 << 20)) {
+		flush_buffer();
 	}
-
-	buf[len] = '\n';
-	++len;
-
-	std::cout.write(buf.data(), len);
 }
 
 /**
@@ -144,6 +157,8 @@ void process_chunks(const usize& number_of_threads) {
             for (usize i = start; i < end; ++i) {
             	print_prime(i);
             }
+
+            flush_buffer();
         });
     }
 }
@@ -165,6 +180,8 @@ void process_shared_mutex(const usize& number_of_threads) {
 
                 print_prime(current_number);
             }
+
+            flush_buffer();
         });
     }
 }
@@ -186,6 +203,8 @@ void process_shared_atomic(const usize& number_of_threads) {
 
                 print_prime(current_number);
             }
+
+            flush_buffer();
         });
     }
 }
@@ -223,7 +242,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    process_chunks(number_of_threads);
+    // Set buffer size to 1 MB
+    buffer.reserve(1 << 20);
+
+    // process_chunks(number_of_threads);
     // process_shared_mutex(number_of_threads);
-    // process_shared_atomic(number_of_threads);
+    process_shared_atomic(number_of_threads);
 }
