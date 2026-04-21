@@ -9,13 +9,13 @@ def analyze(file):
 
 	return means, stds
 
-m1, s1 = analyze("approach1.csv")
-m2, s2 = analyze("approach2.csv")
+m1, s1 = analyze("equal_chunks.csv")
+m2, s2 = analyze("shared_counter_mutex.csv")
 
 threads = [1, 2, 4, 8, 10]
 
-plt.errorbar(threads, m1, yerr=s1, label="Approach 1", marker='o')
-plt.errorbar(threads, m2, yerr=s2, label="Approach 2", marker='o')
+plt.errorbar(threads, m1, yerr=s1, label="Equal chunks", marker='o')
+plt.errorbar(threads, m2, yerr=s2, label="Shared counter with mutex", marker='o')
 
 plt.xlabel("Number of Threads")
 plt.ylabel("Execution Time (s)")

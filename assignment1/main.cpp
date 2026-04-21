@@ -29,7 +29,7 @@ class Counter {
         std::lock_guard<std::mutex> lock(mtx);
         auto temp = value;
         value = temp + 1;
-        return value;
+        return temp;
     }
 };
 
@@ -247,9 +247,6 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
     }
-
-    // Set buffer size to 1 MB
-    buffer.reserve(1 << 20);
 
     // process_chunks(number_of_threads);
     // process_shared_mutex(number_of_threads);
