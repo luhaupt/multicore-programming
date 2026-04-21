@@ -26,15 +26,21 @@ class Counter {
      * Returns the current counter number and increments it.
      */
     int get_and_increment() {
-    	std::lock_guard<std::mutex> lock(mtx);
-        return value++;
+        std::lock_guard<std::mutex> lock(mtx);
+        auto temp = value;
+        value = temp + 1;
+        return value;
     }
 };
 
 const usize N = 100'000'000;
 
 // Buffer per thread for console output
-thread_local std::string buffer;
+thread_local std::string buffer = [] {
+	std::string b;
+	b.reserve(1 << 20);
+	return b;
+}();
 std::mutex buffer_mtx;
 
 void flush_buffer() {
@@ -192,7 +198,7 @@ void process_shared_mutex(const usize& number_of_threads) {
 void process_shared_atomic(const usize& number_of_threads) {
 	std::vector<std::jthread> threads;
 	threads.reserve(number_of_threads);
-    std::atomic<u32> counter;
+    std::atomic<u32> counter{0};
 
     for (size_t thread_id = 0; thread_id < number_of_threads; ++thread_id) {
         threads.emplace_back([&counter] {
