@@ -89,7 +89,7 @@ void print_prime(const usize& n) {
 	*res.ptr++ = '\n';
 	buffer.append(buf, res.ptr);
 
-	if (buffer.size() > (1 << 18)) {
+	if (buffer.size() >= (1 << 18)) {
 		flush_buffer();
 	}
 }
