@@ -16,6 +16,10 @@ using usize = std::size_t;
 using u32 = std::uint32_t;
 using u64 = std::uint64_t;
 
+/**
+ * CURRENTLY UNUSED - No further commentary provided
+ * Class for a mutex counter
+ */
 class Counter {
 	private:
     int value{0};
@@ -42,6 +46,9 @@ thread_local std::string buffer = [] {
 	return b;
 }();
 
+/**
+ * @brief Helper function to print the buffered output for each thread.
+ */
 void flush_buffer() {
 	if (buffer.empty()) return;
 
@@ -50,7 +57,7 @@ void flush_buffer() {
 }
 
 /**
- *  Helper function to check whether the CLI argument "jobs" is from type int.
+ * @brief Helper function to check whether the CLI argument "jobs" value is from type int.
  */
 bool parse_int(std::string_view sv, usize& out) {
     auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), out);
@@ -59,13 +66,17 @@ bool parse_int(std::string_view sv, usize& out) {
 }
 
 /**
- * Checks whether a number is a prime.
+ * @brief Checks whether a number is a prime.
+ *
+ * @param n The number to verify as prime or not.
+ * @return  True if prime, false otherwise.
  */
 bool is_prime(const usize& n) {
     if (n < 2) return false;
     if (n == 2) return true;
     if (n % 2 == 0) return false;
 
+    // Check all numbers above trivial cases
     for (int d = 3; d * d <= n; d += 2)
         if (n % d == 0)
             return false;
@@ -73,7 +84,9 @@ bool is_prime(const usize& n) {
 }
 
 /**
- * Checks whether a number is a prime.
+ * @brief Checks whether a number is a prime.
+ *
+ * @param n The number to verify as prime or not.
  */
 void print_prime(const usize& n) {
 	if(!is_prime(n)) return;
@@ -81,11 +94,13 @@ void print_prime(const usize& n) {
 	char buf[32];
 	auto res = std::to_chars(buf, buf + sizeof(buf), n);
 
+	// to_chars should never fail for a fixed-size integer with a 32-byte buffer
 	if (res.ec != std::errc()) [[unlikely]] {
 		std::cerr << "to_chars failed\n";
 		std::exit(1);
 	}
 
+	// Append newline to prime console output
 	*res.ptr++ = '\n';
 	buffer.append(buf, res.ptr);
 
@@ -95,7 +110,9 @@ void print_prime(const usize& n) {
 }
 
 /**
- * Calculates prime numbers by equally sized chunks.
+ * @brief Calculates prime numbers by equally sized chunks.
+ *
+ * @param number_of_threads The amount of threads used for calculation of primes.
  */
 void process_chunks(const usize& number_of_threads) {
 	// Calculate chunk size to process for each thread
@@ -120,7 +137,10 @@ void process_chunks(const usize& number_of_threads) {
 }
 
 /**
- * Calculates prime numbers using a shared counter with a mutex.
+ * CURRENTLY UNUSED - No further commentary provided
+ * @brief Calculates prime numbers using a shared counter with a mutex.
+ *
+ * @param number_of_threads The amount of threads used for calculation of primes.
  */
 void process_shared_mutex(const usize& number_of_threads) {
 	std::vector<std::jthread> threads;
@@ -143,7 +163,9 @@ void process_shared_mutex(const usize& number_of_threads) {
 }
 
 /**
- * Calculates prime numbers using a shared counter with atomic.
+ * @brief Calculates prime numbers using a shared atomic counter.
+ *
+ * @param number_of_threads The amount of threads used for calculation of primes.
  */
 void process_shared_atomic(const usize& number_of_threads) {
 	std::vector<std::jthread> threads;
@@ -166,6 +188,7 @@ void process_shared_atomic(const usize& number_of_threads) {
 }
 
 int main(int argc, char *argv[]) {
+    // Check for valid input
     if (argc > 3) {
         std::cout << "Usage: ./my-primes [--jobs <number of threads>, Default: 1]\n";
         return EXIT_FAILURE;
@@ -174,6 +197,7 @@ int main(int argc, char *argv[]) {
     usize number_of_threads = 1;
     bool argument_provided = false;
 
+    // Set default thread count to 1 if no argument was provided
     if (argc > 1) {
         argument_provided = std::strcmp(argv[1], "--jobs") == 0;
 
@@ -186,6 +210,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Warning: No number of threads provided. Defaulting to 1 thread...\n";
     }
 
+    // Set custom thread count between 1 and 10
     if (argc == 3 && argument_provided) {
         if (!parse_int(argv[2], number_of_threads)) {
             std::cerr << "Error: Invalid number format\n";
@@ -199,6 +224,8 @@ int main(int argc, char *argv[]) {
     }
 
     process_chunks(number_of_threads);
-    // process_shared_mutex(number_of_threads);
     // process_shared_atomic(number_of_threads);
+
+    // CURRENTLY UNUSED
+    // process_shared_mutex(number_of_threads);
 }
