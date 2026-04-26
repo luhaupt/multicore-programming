@@ -35,19 +35,17 @@ class Counter {
 
 const usize N = 100'000'000;
 
-// Buffer per thread for console output
+// 256 KB buffer per thread for console output
 thread_local std::string buffer = [] {
 	std::string b;
-	b.reserve(1 << 20);
+	b.reserve(1 << 18);
 	return b;
 }();
-std::mutex buffer_mtx;
 
 void flush_buffer() {
 	if (buffer.empty()) return;
 
-	std::lock_guard<std::mutex> lock(buffer_mtx);
-	std::cout.write(buffer.data(), buffer.size());
+	std::osyncstream(std::cout) << buffer;
 	buffer.clear();
 }
 
@@ -124,10 +122,6 @@ bool miller_rabin(const usize& n) {
 void print_prime(const usize& n) {
 	if(!miller_rabin(n)) return;
 
-	if(buffer.capacity() == 0) {
-		buffer.reserve(1 << 20);
-	}
-
 	char buf[32];
 	auto res = std::to_chars(buf, buf + sizeof(buf), n);
 
@@ -139,7 +133,7 @@ void print_prime(const usize& n) {
 	*res.ptr++ = '\n';
 	buffer.append(buf, res.ptr);
 
-	if (buffer.size() > (1 << 20)) {
+	if (buffer.size() > (1 << 18)) {
 		flush_buffer();
 	}
 }
