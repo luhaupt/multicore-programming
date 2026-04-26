@@ -58,69 +58,25 @@ bool parse_int(std::string_view sv, usize& out) {
     return ec == std::errc() && ptr == sv.data() + sv.size();
 }
 
-// (a * b) % mod without overflow
-usize mod_mul(const usize& a, const usize& b, const usize& mod) {
-	__uint128_t res = (__uint128_t)a * b;
-	return (usize)(res % mod);
-}
-
-// (base^exp) % mod
-usize mod_pow(usize base, u64 exp, const usize& mod) {
-	usize result = 1;
-	while (exp > 0) {
-		if (exp & 1) {
-			result = mod_mul(result, base, mod);
-		}
-		base = mod_mul(base, base, mod);
-		exp >>= 1;
-	}
-	return result;
-}
-
 /**
- * Checks whether a number is a prime with the Miller-Rabin test.
+ * Checks whether a number is a prime.
  */
-bool miller_rabin(const usize& n) {
-	if (n < 2) return false;
+bool is_prime(const usize& n) {
+    if (n < 2) return false;
+    if (n == 2) return true;
+    if (n % 2 == 0) return false;
 
-	// Check small primes fast
-	for (usize p : {2, 3, 5, 7}) {
-		if (n % p == 0) return n == p;
-	}
-
-	u64 d = n - 1;
-	int s = 0;
-	while((d & 1) == 0) {
-		d >>= 1;
-		++s;
-	}
-
-	auto check = [&](usize a) {
-		if (a % n == 0) return true;
-
-		usize x = mod_pow(a, d, n);
-		if (x == 1 || x == n - 1) return true;
-
-		for (int r = 1; r < s; ++r) {
-			x = mod_mul(x, x, n);
-			if (x == n - 1) return true;
-		}
-		return false;
-	};
-
-	// Check only bases necessary for our N
-	for (usize a : {2, 7, 61}) {
-		if (!check(a)) return false;
-	}
-
-	return true;
+    for (int d = 3; d * d <= n; d += 2)
+        if (n % d == 0)
+            return false;
+    return true;
 }
 
 /**
  * Checks whether a number is a prime.
  */
 void print_prime(const usize& n) {
-	if(!miller_rabin(n)) return;
+	if(!is_prime(n)) return;
 
 	char buf[32];
 	auto res = std::to_chars(buf, buf + sizeof(buf), n);
@@ -242,7 +198,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // process_chunks(number_of_threads);
+    process_chunks(number_of_threads);
     // process_shared_mutex(number_of_threads);
-    process_shared_atomic(number_of_threads);
+    // process_shared_atomic(number_of_threads);
 }
