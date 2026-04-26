@@ -15,7 +15,7 @@ do
 
 	for t in "${THREADS[@]}"
 	do
-		# time nur real Zeit extrahieren
+		# Only extract real time
 		/usr/bin/time -f "%e" -o tmp_time.txt "$BINARY" --jobs "$t"
 
 		val=$(cat tmp_time.txt)
