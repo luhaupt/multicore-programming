@@ -18,13 +18,13 @@ for pair in "${PAIRS[@]}"
 do
 	read MIN MAX <<< "$pair"
 
-	FILE="backoff-${MIN}-${MAX}.csv"
+	FILE="results/backoff-${MIN}-${MAX}.csv"
 
 	echo "jobs,lock,runtime_ns" > "$FILE"
 
 	for jobs in "${JOBS[@]}"
 	do
-		./program \
+		./a.out \
 			--lock backoff \
 			--backoff-min "$MIN" \
 			--backoff-max "$MAX" \
