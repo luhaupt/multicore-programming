@@ -11,74 +11,69 @@
 class ALog : public Lock {
   public:
     explicit ALog(std::size_t threads) : threads_(threads) {
-        // Number of tree nodes needed for a binary tree
-        treeSize_ = 1;
-        while (treeSize_ < threads_) {
-            treeSize_ *= 2;
+        if (threads_ <= 1) {
+            return;
         }
 
-        nodes_ = std::make_unique<Node[]>(treeSize_ * 2);
+        levels_ = static_cast<std::size_t>(std::ceil(std::log2(threads_)));
+        flags_ = std::make_unique<std::unique_ptr<AlignedFlag[]>[]>(levels_);
+        std::size_t size = threads_;
 
-        // Each thread starts at its leaf
-        paths_ = std::make_unique<Path[]>(threads_);
+        for (std::size_t level = 0; level < levels_; level++) {
+            flags_[level] = std::make_unique<AlignedFlag[]>(size);
 
-        for (std::size_t t = 0; t < threads_; ++t) {
-            std::size_t node = treeSize_ + t;
-
-            while (node > 1) {
-                node /= 2;
-                paths_[t].nodes.push_back(node);
+            for (std::size_t i = 0; i < size; i++) {
+                flags_[level][i].flag.store(false);
             }
+
+            size = (size + 1) / 2;
         }
+
+        flags_[0][0].flag.store(true);
     }
 
     void lock() override {
-        std::size_t id = threadId();
+        if (threads_ <= 1) {
+            return;
+        }
 
-        // Traverse from leaf to root
-        for (auto node : paths_[id].nodes) {
+        mySlot_ = next_.fetch_add(1) % threads_;
+        std::size_t slot = mySlot_;
 
-            bool expected = false;
+        for (std::size_t level = 0; level < levels_; level++) {
+            std::size_t parent = slot / 2;
 
-            while (!nodes_[node].locked.compare_exchange_weak(
-                expected, true, std::memory_order_acquire)) {
-
-                expected = false;
+            while (
+                !flags_[level][parent].flag.load(std::memory_order_acquire)) {
             }
+
+            flags_[level][parent].flag.store(false, std::memory_order_release);
+            slot = parent;
         }
     }
 
     void unlock() override {
-        std::size_t id = threadId();
+        if (threads_ <= 1) {
+            return;
+        }
 
-        // Release from root back down
-        for (auto it = paths_[id].nodes.rbegin(); it != paths_[id].nodes.rend();
-             ++it) {
+        std::size_t slot = mySlot_;
 
-            nodes_[*it].locked.store(false, std::memory_order_release);
+        for (std::size_t level = levels_; level-- > 0;) {
+            std::size_t parent = slot / 2;
+            flags_[level][parent].flag.store(true, std::memory_order_release);
+            slot = parent;
         }
     }
 
   private:
-    struct alignas(CACHE_LINE_SIZE) Node {
-        std::atomic<bool> locked{false};
+    struct alignas(CACHE_LINE_SIZE) AlignedFlag {
+        std::atomic<bool> flag{false};
     };
 
-    struct Path {
-        std::vector<std::size_t> nodes;
-    };
-
-    std::unique_ptr<Node[]> nodes_;
-
-    std::unique_ptr<Path[]> paths_;
-
+    std::unique_ptr<std::unique_ptr<AlignedFlag[]>[]> flags_;
     std::size_t threads_;
-
-    std::size_t treeSize_;
-
-    static std::size_t threadId() {
-        static std::atomic<std::size_t> counter{0};
-        thread_local std::size_t id = counter.fetch_add(1);
-        return id;
-    }
+    std::size_t levels_{0};
+    std::atomic<std::size_t> next_{0};
+    static inline thread_local std::size_t mySlot_{0};
 };
