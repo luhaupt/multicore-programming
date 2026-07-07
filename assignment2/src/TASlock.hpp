@@ -7,10 +7,10 @@ class TASlock : public Lock {
     std::atomic_flag state = false;
 
   public:
-    void lock() {
+    void lock() override {
         while (state.test_and_set()) {
         }
     }
 
-    void unlock() { state.clear(); }
+    void unlock() override { state.clear(); }
 };

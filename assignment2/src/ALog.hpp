@@ -1,6 +1,7 @@
 #pragma once
 #include "CacheLine.hpp"
 #include "Lock.hpp"
+#include <array>
 #include <atomic>
 #include <cmath>
 #include <cstddef>
@@ -8,6 +9,9 @@
 #include <memory>
 #include <vector>
 
+// Tournament (arbitration tree) lock: threads pair up in a binary tree of
+// 2-way Peterson locks. Acquiring means winning from leaf to root;
+// releasing undoes this from root to leaf.
 class ALog : public Lock {
   public:
     explicit ALog(std::size_t threads) : threads_(threads) {
@@ -18,8 +22,10 @@ class ALog : public Lock {
         std::size_t nodes = threads_;
         for (std::size_t level = 0; level < levels_; level++) {
             nodes = (nodes + 1) / 2;
-            tree_[level] = std::make_unique<Node[]>(nodes);
+            tree_[level] = std::vector<Node>(nodes);
         }
+
+        // Precompute each thread's leaf-to-root path once.
         paths_.resize(threads_);
         for (std::size_t t = 0; t < threads_; t++) {
             std::size_t node = t;
@@ -55,6 +61,9 @@ class ALog : public Lock {
     void unlock() override {
         if (threads_ <= 1)
             return;
+
+        // Release root-first so the sibling subtree can proceed before
+        // we free our own lower nodes.
         auto &path = paths_[mySlot_];
         for (std::size_t level = levels_; level-- > 0;) {
             auto node = path.nodes[level];
@@ -66,7 +75,7 @@ class ALog : public Lock {
 
   private:
     struct alignas(CACHE_LINE_SIZE) Node {
-        std::atomic<bool> flag[2] = {false, false};
+        std::array<std::atomic<bool>, 2> flag{};
         std::atomic<int> turn{0};
     };
     struct Path {
@@ -74,7 +83,7 @@ class ALog : public Lock {
         std::vector<std::size_t> side;
     };
 
-    std::vector<std::unique_ptr<Node[]>> tree_;
+    std::vector<std::vector<Node>> tree_;
     std::vector<Path> paths_;
     std::size_t threads_;
     std::size_t levels_{0};
@@ -82,5 +91,7 @@ class ALog : public Lock {
 
     static constexpr std::size_t kUnset =
         std::numeric_limits<std::size_t>::max();
+
+    // Shared across all ALog instances on this thread.
     static inline thread_local std::size_t mySlot_{kUnset};
 };

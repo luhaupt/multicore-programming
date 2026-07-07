@@ -8,7 +8,7 @@
 #include "ALog.hpp"
 #include "BackoffLock.hpp"
 #include "Lock.hpp"
-#include "MCSlock.hpp"
+#include "MCSLock.hpp"
 #include "TASlock.hpp"
 #include "TTASlock.hpp"
 #include "Ticker.hpp"
@@ -137,7 +137,7 @@ std::unique_ptr<Ticker> create_ticker(const std::string &type, Lock *lock) {
  * While execution it measures the runtime and prints it to std::cout
  * afterwards.
  */
-void run_sample(Config &config, Ticker &ticker) {
+void run_sample(const Config &config, Ticker &ticker) {
     // Allocate container before measurement
     std::vector<std::jthread> threads;
     threads.reserve(config.jobs);

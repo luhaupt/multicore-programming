@@ -40,13 +40,11 @@ class LockedTicker : public Ticker {
 
 class STLAtomicTicker : public Ticker {
   public:
-    inline STLAtomicTicker() : counter_(0) {}
+    STLAtomicTicker() : counter_(0) {}
 
-    inline std::size_t operator++(int) { return counter_.fetch_add(1); }
-
-    inline std::size_t operator++() { return counter_.fetch_add(1) + 1; }
-
-    inline std::size_t load() const { return counter_.load(); }
+    std::size_t operator++(int) override { return counter_.fetch_add(1); }
+    std::size_t operator++() override { return counter_.fetch_add(1) + 1; }
+    std::size_t load() const { return counter_.load(); }
 
   private:
     std::atomic_size_t counter_;

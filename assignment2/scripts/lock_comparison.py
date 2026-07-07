@@ -9,17 +9,13 @@ files = sys.argv[1:]
 # Load all CSV files
 df = pd.concat([pd.read_csv(filepath) for filepath in files], ignore_index=True)
 
-
 # Calculate mean runtime for every lock/job combination
 means = df.groupby(["lock", "jobs"])["runtime_ns"].mean().reset_index()
-
 
 locks = sorted(means["lock"].unique())
 jobs = sorted(means["jobs"].unique())
 
-
 results = []
-
 
 for lock_a in locks:
     for lock_b in locks:
@@ -54,7 +50,6 @@ for lock_a in locks:
                 }
             )
 
-
 result_df = pd.DataFrame(results)
 result_df = result_df.sort_values(
     [
@@ -64,8 +59,4 @@ result_df = result_df.sort_values(
     ]
 )
 
-
-result_df.to_csv("results/hypothesis_results.csv", index=False)
-
-
-print(result_df)
+print(result_df.to_csv(index=False))

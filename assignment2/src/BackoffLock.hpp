@@ -1,11 +1,12 @@
 #pragma once
 
+#include "TTASlock.hpp"
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <random>
 #include <thread>
-
-#include "TTASlock.hpp"
 
 class BackoffLock : public TTASlock {
   public:
@@ -16,13 +17,12 @@ class BackoffLock : public TTASlock {
         static thread_local std::mt19937_64 generator{std::random_device{}()};
         std::uniform_int_distribution<std::size_t> distribution(min_delay_,
                                                                 max_delay_);
-
-        std::size_t delay = min_delay_;
-
+        std::size_t delay = distribution(generator);
         while (true) {
             while (locked_.load(std::memory_order_relaxed)) {
                 active_wait(std::chrono::nanoseconds(delay));
 
+                // Exponential backoff, capped at max_delay_
                 delay = std::min(delay * 2, max_delay_);
             }
 
@@ -43,7 +43,6 @@ class BackoffLock : public TTASlock {
     }
 
     std::atomic<bool> locked_{false};
-
     std::size_t min_delay_;
     std::size_t max_delay_;
 };

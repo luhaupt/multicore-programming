@@ -4,17 +4,15 @@
 #include <atomic>
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 #include "Lock.hpp"
 
+// Anderson's array-based queue lock: threads spin on their own slot,
+// avoiding false sharing since each slot is padded to a cache line.
 class ALock : public Lock {
   public:
-    explicit ALock(std::size_t threads)
-        : flags_(std::make_unique<AlignedFlag[]>(threads)), size_(threads) {
-        for (std::size_t i = 0; i < size_; ++i) {
-            flags_[i].flag.store(false);
-        }
-
+    explicit ALock(std::size_t threads) : flags_(threads), size_(threads) {
         flags_[0].flag.store(true);
     }
 
@@ -37,11 +35,13 @@ class ALock : public Lock {
         std::atomic<bool> flag{false};
     };
 
-    std::unique_ptr<AlignedFlag[]> flags_;
+    std::vector<AlignedFlag> flags_;
 
     std::size_t size_;
 
     std::atomic<std::size_t> next_{0};
 
+    // Shared across all ALock instances on this thread; do not use
+    // multiple instances concurrently on the same thread.
     static inline thread_local std::size_t mySlot_;
 };

@@ -3,7 +3,7 @@
 
 class TTASlock : public TASlock {
   public:
-    void lock() {
+    void lock() override {
         while (true) {
             while (state.test()) {
             }
