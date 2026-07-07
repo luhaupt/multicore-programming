@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOCKS=("mcs")
+LOCKS=("tas" "ttas" "aq" "alog" "mcs")
 JOBS=(1 2 4 6 8 10)
 SAMPLES=50
 

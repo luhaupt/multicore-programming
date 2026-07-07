@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "ALock.hpp"
+#include "ALog.hpp"
 #include "BackoffLock.hpp"
 #include "Lock.hpp"
 #include "MCSlock.hpp"
@@ -98,6 +99,10 @@ std::unique_ptr<Lock> create_lock(const Config &config) {
 
     if (config.lock == "aq") {
         return std::make_unique<ALock>(config.jobs);
+    }
+
+    if (config.lock == "alog") {
+        return std::make_unique<ALog>(config.jobs);
     }
 
     if (config.lock == "mcs") {
