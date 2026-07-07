@@ -83,8 +83,8 @@ atomic,True,True,False,aq,4
 atomic,True,True,False,aq,6
 atomic,True,True,False,aq,8
 atomic,True,True,False,aq,10
-atomic,True,False,True,backoff-1000-8000,1
-atomic,True,False,True,backoff-1000-8000,2
+atomic,True,True,False,backoff-1000-8000,1
+atomic,True,True,False,backoff-1000-8000,2
 atomic,True,False,True,backoff-1000-8000,4
 atomic,True,False,True,backoff-1000-8000,6
 atomic,True,False,True,backoff-1000-8000,8
@@ -119,13 +119,13 @@ backoff-1000-8000,True,True,False,aq,4
 backoff-1000-8000,True,True,False,aq,6
 backoff-1000-8000,True,True,False,aq,8
 backoff-1000-8000,True,True,False,aq,10
-backoff-1000-8000,True,True,False,atomic,1
-backoff-1000-8000,True,True,False,atomic,2
+backoff-1000-8000,True,False,True,atomic,1
+backoff-1000-8000,True,False,True,atomic,2
 backoff-1000-8000,True,True,False,atomic,4
 backoff-1000-8000,True,True,False,atomic,6
 backoff-1000-8000,True,True,False,atomic,8
 backoff-1000-8000,True,True,False,atomic,10
-backoff-1000-8000,True,True,False,mcs,1
+backoff-1000-8000,True,False,True,mcs,1
 backoff-1000-8000,True,True,False,mcs,2
 backoff-1000-8000,True,True,False,mcs,4
 backoff-1000-8000,True,True,False,mcs,6
@@ -161,7 +161,7 @@ mcs,True,False,True,atomic,4
 mcs,True,False,True,atomic,6
 mcs,True,False,True,atomic,8
 mcs,True,False,True,atomic,10
-mcs,True,False,True,backoff-1000-8000,1
+mcs,True,True,False,backoff-1000-8000,1
 mcs,True,False,True,backoff-1000-8000,2
 mcs,True,False,True,backoff-1000-8000,4
 mcs,True,False,True,backoff-1000-8000,6
@@ -251,3 +251,4 @@ ttas,True,True,False,tas,4
 ttas,True,True,False,tas,6
 ttas,True,True,False,tas,8
 ttas,True,True,False,tas,10
+
